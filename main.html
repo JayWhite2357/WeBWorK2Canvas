@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+          body {
+          text-align: center;
+      }
+
+
+      textarea {
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: scroll;
+}
+
+
+      .block {
+        border-radius: 5px;
+        text-align: center;
+        box-shadow: 1px 1px 5px grey;
+        margin: 10px;
+        padding: 10px;
+        display:inline-block;
+      }
+      .contain {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .tablepane {
+        display: inline-block;
+        overflow-y: scroll;
+        max-height: 200px;
+      }
+      table,
+      th,
+      td {
+        text-align: center;
+        margin: auto;
+        padding: 10px;
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+    </style>
+    <script src="FileSaver.min.js"></script>
+    <script>
+    function uploadFile(e) {
+      e.preventDefault();
+      return false;
+    }
+    function loadGrades(e) {
+      e.preventDefault();
+      
+      var sectionnumber = document.getElementById("secnum").value;
+      var lines = document.getElementById("WWdat").value.match(/[^\r\n]+/g);
+      var linessplit = lines.map(function(x){return x.split(",").map(function(y){return y.trim();});});
+      var sectiononly = linessplit.filter(function(l){return l[5] == sectionnumber;});
+      var header = null;
+      linessplit.forEach(function (l) {
+        if (l[0]=="SET NAME"){
+          header = l;
+        }
+      });
+      console.log(header);
+      console.log(sectiononly);
+      
+      tablebody = document.getElementById("tablebody");
+      tableheadrow = document.getElementById("tableheadrow");
+      tablebody.innerHTML = "";
+      tableheadrow.innerHTML = "";
+      tableheadrow.insertCell().innerHTML = "SIS Login ID";
+      for (var i = 6; i <= header.length-3; i++)
+      {
+        tableheadrow.insertCell().innerHTML = header[i].replace(/_/g," ");
+      }
+      sectiononly.forEach(
+        function(l){
+          var newRow = tablebody.insertRow();
+          newRow.insertCell().innerHTML = l[1];
+          for (var i = 6; i <= header.length-3; i++)
+          {
+            newRow.insertCell().innerHTML = l[i];
+          }
+        }
+      )
+      return false;
+    }
+    function exportGrades(e) {
+      e.preventDefault();
+      tablebody = document.getElementById("tablebody");
+      tableheadrow = document.getElementById("tableheadrow");
+      header = Array.from(tableheadrow.cells).map(e=>e.innerHTML);
+      body = Array.from(tablebody.rows).map(r=>Array.from(r.cells).map(e=>e.innerHTML));
+      headerstring = 'Student,ID,SIS User ID,' + header[0] + ',Section,' + header.slice(1).join(",")
+      bodystring = body.map(r=>',,,'+r[0]+',,'+r.slice(1).join(",")).join("\n");
+      outputstring = headerstring + "\n" + bodystring
+      console.log(outputstring);
+      var blob = new Blob([outputstring],
+                { type: "text/plain;charset=utf-8" });
+            saveAs(blob, "CanvasImport.csv");
+      return false;
+    }
+    </script>
+  </head>
+  <body>
+    <div class="contain">
+    <div class="block">
+      <form id="ArchiveForm" onsubmit="return uploadFile(event)">
+        <label for="wfile">WeBWorK grades file:</label>
+        <input type="file" id="wfile"/><br>
+        <input type="submit" value="Upload File">
+      </form>
+    </div>
+    <div class="block">
+      <form id="ArchiveForm" onsubmit="return loadGrades(event)">
+        <label for="WWdat">WeBWorK grades csv, either uploaded or copy/pasted:</label><br>
+        <textarea name="WWdat" id="WWdat" rows="10" cols="50" wrap="soft"></textarea><br>
+        <label for="secnum">Section to grade:</label>
+        <input type="text" id="secnum" name="secnum" value="000"><br>
+        <input type="submit" value="Load grades">
+      </form>
+    </div>
+    </div><br>
+    <div class="block">
+    <div class="tablepane">
+      <table id="myTable">
+        <thead>
+          <tr id="tableheadrow">
+            <th>SIS Login ID</th>
+          </tr>
+        </thead>
+        <tbody id="tablebody">
+        </tbody>
+      </table>
+    </div><br>
+    <form id="CanvasForm" onsubmit="return exportGrades(event)">
+        <input type="submit" value="Export to Canvas Format">
+    </form>
+    </div>
+  </body>
+</html>
