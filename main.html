@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+          body {
+          text-align: center;
+      }
+
+
+      .block {
+        border-radius: 5px;
+        text-align: center;
+        box-shadow: 1px 1px 5px grey;
+        margin: 10px;
+        padding: 10px;
+        display:inline-block
+      }
+      .tablepane {
+        display: inline-block;
+        overflow-y: scroll;
+        max-height: 200px;
+      }
+      table,
+      th,
+      td {
+        text-align: center;
+        margin: auto;
+        padding: 10px;
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="WW2Clib.js"></script>
+    <script>
+    var setCallback = function(seturl, setname, openDate, dueDate, points) {
+      if (document.getElementById("wval").value != "") {
+        points = document.getElementById("wval").value;
+      }
+      seturl = document.getElementById("wurl").value + seturl;
+      console.log([seturl, setname, openDate, dueDate, points]);
+      var tableRef = document.getElementById('myTable').getElementsByTagName('tbody')[0];
+      var newRow   = tableRef.insertRow();
+      for (tt of [setname, seturl, openDate, dueDate, points]) {
+        var newCell  = newRow.insertCell();
+        newCell.innerHTML = tt;
+      }
+    };
+    function mySubmitFunction(e) {
+      e.preventDefault();
+      var tableRef = document.getElementById('myTable').getElementsByTagName('tbody')[0];
+      var wurl = document.getElementById("wurl");
+      if (wurl.value[wurl.value.length -1] != '/') {
+        wurl.value = wurl.value + '/'
+      }
+      tableRef.innerHTML = "";
+      for (file of document.getElementById("wfile").files) {
+        window.eFile(file, setCallback);
+      }
+      return false;
+    }
+    function submitCanvas(e) {
+      e.preventDefault();
+      var curl = document.getElementById("curl");
+      if (curl.value[curl.value.length -1] != '/') {
+        curl.value = curl.value + '/'
+      }
+      
+      
+      var postToUrl = curl.value.replace("courses","api/v1/courses") + "assignments";
+      var tableRef = document.getElementById('myTable').getElementsByTagName('tbody')[0];
+      for (row of tableRef.children) {
+        setname = row.children[0].innerText;
+        seturl = row.children[1].innerText;
+        openDate = row.children[2].innerText;
+        dueDate = row.children[3].innerText;
+        points = row.children[4].innerText;
+        jsonObject = {
+          "assignment":{
+            "name":setname,
+            "submission_types":"external_tool",
+            "due_at":dueDate,
+            "unlock_at":openDate,
+            "points_possible":points,
+            "assignment_group_id":document.getElementById("cgroup").value,
+            "external_tool_tag_attributes":{
+              "url":seturl,
+              "new_tab":"true"
+            }
+          }
+        };
+        console.log(postToUrl);
+        console.log(jsonObject);
+        //$.post(postToUrl, jsonObject)
+        
+        canvasurl = new URL(postToUrl);
+        
+        const Auth = "Bearer " + document.getElementById("cauth").value;
+        
+        AWSjsonObject = {
+          "path": canvasurl.pathname,
+          "hostname": canvasurl.hostname,
+          "headers": {
+            "Authorization": Auth,
+            "Content-Type": "application/json"
+          },
+          "data": jsonObject
+        };
+        
+        
+        console.log(AWSjsonObject);
+        console.log(JSON.stringify(AWSjsonObject));
+        
+        
+        $.ajax({
+          url: 'https://0bj049dhf6.execute-api.us-east-2.amazonaws.com/default/postToCanvas',
+          headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type':'application/json'
+          },
+          crossDomain: true,
+          method: 'POST',
+          data: JSON.stringify(AWSjsonObject),
+          success: function(data){
+            console.log('succes: '+data);
+          }
+        });
+        
+        
+      }
+      return false;
+    }
+    </script>
+  </head>
+  <body>
+    <div class="block">
+      <form id="ArchiveForm" onsubmit="return mySubmitFunction(event)">
+        <label for="wurl">WeBWorK course url:</label>
+        <input type="text" id="wurl" name="wurl"><br>
+        <label for="wval">Number of points per set (blank indicates Canvas should match WeBWorK):</label>
+        <input type="number" id="wval" name="wval"><br>
+        <label for="wfile">Archive of WeBWorK problem sets:</label>
+        <input type="file" id="wfile"/><br>
+        <input type="submit" value="Upload WeBWorK Archive">
+      </form>
+    </div><br>
+    <div class="tablepane block">
+      <table id="myTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Url</th>
+            <th>Open Date</th>
+            <th>Due Date</th>
+            <th>Number of Points</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
+    </div><br>
+    <div class="block">
+    <form id="CanvasForm" onsubmit="return submitCanvas(event)">
+        <label for="curl">Canvas course url:</label>
+        <input type="text" id="curl" name="curl"><br>
+        <label for="cauth">Canvas authentication token:</label>
+        <input type="text" id="cauth" name="cauth"><br>
+        <label for="cgroup">Canvas group ID (optional):</label>
+        <input type="text" id="cgroup" name="cgroup"><br>
+        <input type="submit" value="Create assignments in Canvas">
+    </form>
+    </div>
+  </body>
+</html>
