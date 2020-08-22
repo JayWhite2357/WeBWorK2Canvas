@@ -46,6 +46,12 @@
     <script>
     function uploadFile(e) {
       e.preventDefault();
+      file = document.getElementById("wfile").files[0];
+      const reader = new FileReader();
+      reader.addEventListener('load', (event) => {
+        document.getElementById("WWdat").value = event.target.result;
+      });
+      reader.readAsText(file);
       return false;
     }
     function loadGrades(e) {
