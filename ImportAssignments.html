@@ -97,7 +97,7 @@
         
         const Auth = "Bearer " + document.getElementById("cauth").value;
         
-        AWSjsonObject = {
+        /*AWSjsonObject = {
           "path": canvasurl.pathname,
           "hostname": canvasurl.hostname,
           "headers": {
@@ -109,20 +109,27 @@
         
         
         console.log(AWSjsonObject);
-        console.log(JSON.stringify(AWSjsonObject));
+        console.log(JSON.stringify(AWSjsonObject));*/
         
         
         $.ajax({
-          url: 'https://0bj049dhf6.execute-api.us-east-2.amazonaws.com/default/postToCanvas',
+          url: 'https://cors-anywhere.herokuapp.com/' + postToUrl,
           headers: {
-              'Access-Control-Allow-Origin': '*',
-              'Content-Type':'application/json'
+            'Access-Control-Allow-Origin': '*',
+            "Authorization": Auth,
+            "Content-Type": "application/json"
           },
+          contentType: "application/json",
+          dataType: "json",
           crossDomain: true,
           method: 'POST',
-          data: JSON.stringify(AWSjsonObject),
+          data: JSON.stringify(jsonObject),
           success: function(data){
-            console.log('succes: '+data);
+            console.log('succes: '+ JSON.stringify(data));
+            document.getElementById('Canvasblock').insertAdjacentHTML( 'beforeend', '<br>Created Assignment named "' + data.name + '"' );
+          },
+          error: function(response) {
+              console.log(response);
           }
         });
         
@@ -160,10 +167,15 @@
       </table>
     </div><br>
     <div class="block">
+      Note: this relies on <a href="https://www.npmjs.com/package/cors-anywhere">cors-anywhere</a> and uses the live version <a href="https://cors-anywhere.herokuapp.com">here</a>.<br>
+      You can generate an access token on Canvas in /profile/settings under "Approved Integrations".<br>
+    </div><br>
+    <div id="Canvasblock" class="block">
     <form id="CanvasForm" onsubmit="return submitCanvas(event)">
         <label for="curl">Canvas course url:</label>
         <input type="text" id="curl" name="curl"><br>
-        <label for="cauth">Canvas authentication token:</label>
+        
+        <label for="cauth">Canvas access token:</label>
         <input type="text" id="cauth" name="cauth"><br>
         <label for="cgroup">Canvas group ID (optional):</label>
         <input type="text" id="cgroup" name="cgroup"><br>
